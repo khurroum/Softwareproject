@@ -12,6 +12,20 @@ const createOrder = async (req, res) => {
       shippingAddress,
       paymentMethod,
     } = req.body;
+    const allowedPaymentMethods = [
+  "Cash on Delivery",
+  "SSLCOMMERZ",
+];
+
+if (
+  !allowedPaymentMethods.includes(
+    paymentMethod
+  )
+) {
+  return res.status(400).json({
+    message: "Invalid payment method.",
+  });
+}
 
     // =========================
     // CHECK ORDER ITEMS

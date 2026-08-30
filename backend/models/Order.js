@@ -118,25 +118,78 @@ const orderSchema = new mongoose.Schema(
 
 
     // =========================
-    // PAYMENT
+    // PAYMENT METHOD
     // =========================
     paymentMethod: {
       type: String,
+
       enum: [
         "Cash on Delivery",
-        "Stripe",
+        "SSLCOMMERZ",
       ],
+
       default: "Cash on Delivery",
     },
 
+
+    // =========================
+    // PAYMENT STATUS
+    // =========================
     paymentStatus: {
       type: String,
+
       enum: [
         "Pending",
         "Paid",
         "Failed",
       ],
+
       default: "Pending",
+    },
+paymentTransactionId: {
+  type: String,
+  default: null,
+},
+
+paymentValidationId: {
+  type: String,
+  default: null,
+},
+
+    // =========================
+    // SSLCOMMERZ TRANSACTION ID
+    // =========================
+    transactionId: {
+      type: String,
+      default: null,
+    },
+
+
+    // =========================
+    // SSLCOMMERZ VALIDATION ID
+    // =========================
+    validationId: {
+      type: String,
+      default: null,
+    },
+
+
+    // =========================
+    // PAYMENT DATE
+    // =========================
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+
+
+    // =========================
+    // STOCK RESTORED
+    // Used when online payment fails/cancels
+    // =========================
+    stockRestored: {
+      type: Boolean,
+      default: false,
     },
 
 
@@ -145,6 +198,7 @@ const orderSchema = new mongoose.Schema(
     // =========================
     orderStatus: {
       type: String,
+
       enum: [
         "Pending",
         "Processing",
@@ -152,6 +206,7 @@ const orderSchema = new mongoose.Schema(
         "Delivered",
         "Cancelled",
       ],
+
       default: "Pending",
     },
   },
@@ -166,5 +221,6 @@ const Order = mongoose.model(
   "Order",
   orderSchema
 );
+
 
 module.exports = Order;

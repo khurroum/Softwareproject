@@ -1,5 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 
+import PaymentSuccess from "../pages/user/PaymentSuccess";
+import PaymentFailed from "../pages/user/PaymentFailed";
+import PaymentCancelled from "../pages/user/PaymentCancelled";
 // Route Protection
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
@@ -52,6 +55,22 @@ export default function AppRouter() {
           USER LAYOUT
       ================================================== */}
       <Route element={<UserLayout />}>
+
+      <Route
+  path="/payment/success"
+  element={<PaymentSuccess />}
+/>
+
+<Route
+  path="/payment/failed"
+  element={<PaymentFailed />}
+/>
+
+<Route
+  path="/payment/cancelled"
+  element={<PaymentCancelled />}
+/>
+
 
         {/* =========================
             PUBLIC USER ROUTES

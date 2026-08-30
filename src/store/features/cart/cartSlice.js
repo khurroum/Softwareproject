@@ -10,28 +10,68 @@ const cartSlice = createSlice({
   initialState,
 
   reducers: {
-    // Add product to cart
+    // ==================================================
+    // ADD PRODUCT TO CART
+    // ==================================================
+
     addToCart: (state, action) => {
       const product = action.payload;
 
+      // MongoDB normally uses _id.
+      // Some frontend components may use id.
+      const productId =
+        product?._id ||
+        product?.id ||
+        product?.product?._id ||
+        product?.product?.id;
+
+      if (!productId) {
+        console.error(
+          "Cannot add product to cart: Product ID is missing.",
+          product
+        );
+
+        return;
+      }
+
       const existingItem = state.items.find(
-        (item) => item.id === product.id
+        (item) =>
+          String(item.id) === String(productId)
       );
 
       if (existingItem) {
-        existingItem.quantity += product.quantity || 1;
-      } else {
-        state.items.push({
-          ...product,
-          quantity: product.quantity || 1,
-        });
+        existingItem.quantity +=
+          Number(product.quantity || 1);
+
+        return;
       }
+
+      // Store a normalized cart object.
+      state.items.push({
+        ...product,
+
+        // IMPORTANT:
+        // Always keep the MongoDB product ID
+        // as `id` for the frontend cart.
+        id: productId,
+
+        // Also preserve _id when available.
+        _id: product?._id || productId,
+
+        quantity:
+          Number(product.quantity) || 1,
+      });
     },
 
-    // Increase quantity
+    // ==================================================
+    // INCREASE QUANTITY
+    // ==================================================
+
     increaseQuantity: (state, action) => {
       const item = state.items.find(
-        (item) => item.id === action.payload
+        (item) =>
+          String(item.id) ===
+          String(action.payload)
       );
 
       if (item) {
@@ -39,10 +79,15 @@ const cartSlice = createSlice({
       }
     },
 
-    // Decrease quantity
+    // ==================================================
+    // DECREASE QUANTITY
+    // ==================================================
+
     decreaseQuantity: (state, action) => {
       const item = state.items.find(
-        (item) => item.id === action.payload
+        (item) =>
+          String(item.id) ===
+          String(action.payload)
       );
 
       if (item && item.quantity > 1) {
@@ -50,34 +95,94 @@ const cartSlice = createSlice({
       }
     },
 
-    // Update quantity directly
+    // ==================================================
+    // UPDATE QUANTITY
+    // ==================================================
+
     updateQuantity: (state, action) => {
-      const { id, quantity } = action.payload;
+      const {
+        id,
+        quantity,
+      } = action.payload;
 
       const item = state.items.find(
-        (item) => item.id === id
+        (item) =>
+          String(item.id) ===
+          String(id)
       );
 
       if (item) {
-        item.quantity = quantity;
+        item.quantity =
+          Math.max(
+            1,
+            Number(quantity) || 1
+          );
       }
     },
 
-    // Remove product completely
+    // ==================================================
+    // REMOVE PRODUCT
+    // ==================================================
+
     removeFromCart: (state, action) => {
-      state.items = state.items.filter(
-        (item) => item.id !== action.payload
-      );
+      state.items =
+        state.items.filter(
+          (item) =>
+            String(item.id) !==
+            String(action.payload)
+        );
     },
 
-    // Clear current Redux cart
+    // ==================================================
+    // CLEAR CART
+    // ==================================================
+
     clearCart: (state) => {
       state.items = [];
     },
 
-    // Restore a user's saved cart
+    // ==================================================
+    // RESTORE CART
+    // ==================================================
+
     setCart: (state, action) => {
-      state.items = action.payload;
+      const items =
+        Array.isArray(action.payload)
+          ? action.payload
+          : [];
+
+      // Normalize older cart data.
+      state.items = items
+        .map((item) => {
+          const productId =
+            item?._id ||
+            item?.id ||
+            item?.product?._id ||
+            item?.product?.id;
+
+          if (!productId) {
+            console.warn(
+              "Skipping cart item without product ID:",
+              item
+            );
+
+            return null;
+          }
+
+          return {
+            ...item,
+
+            id: productId,
+
+            _id:
+              item?._id ||
+              productId,
+
+            quantity:
+              Number(item.quantity) || 1,
+          };
+        })
+        .filter(Boolean);
     },
   },
 });

@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 
 
@@ -38,6 +39,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
@@ -68,6 +70,10 @@ app.use(
 app.use(
   "/api/orders",
   orderRoutes
+);
+app.use(
+  "/api/payments",
+  paymentRoutes
 );
 
 app.use(

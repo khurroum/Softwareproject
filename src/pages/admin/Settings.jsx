@@ -1,65 +1,254 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+
+import {
+  setSettings,
+  resetSettings,
+} from "../../store/features/settings/settingsSlice";
 
 export default function Settings() {
+  const dispatch = useDispatch();
+
+  // ==================================================
+  // DEFAULT SETTINGS
+  // ==================================================
+
+  const defaultSettings = {
+    storeName: "ShopEase",
+    storeEmail: "admin@example.com",
+    currency: "USD",
+    notifications: true,
+    lowStockAlerts: true,
+  };
+
+  // ==================================================
+  // STATE
+  // ==================================================
+
   const [storeName, setStoreName] = useState(
-    "My Store"
+    defaultSettings.storeName
   );
 
   const [storeEmail, setStoreEmail] = useState(
-    "admin@example.com"
+    defaultSettings.storeEmail
   );
 
-  const [currency, setCurrency] =
-    useState("USD");
+  const [currency, setCurrency] = useState(
+    defaultSettings.currency
+  );
 
   const [notifications, setNotifications] =
-    useState(true);
+    useState(defaultSettings.notifications);
 
   const [lowStockAlerts, setLowStockAlerts] =
-    useState(true);
+    useState(defaultSettings.lowStockAlerts);
 
   const [saving, setSaving] = useState(false);
+
   const [success, setSuccess] = useState("");
 
-  // =========================
+  const [error, setError] = useState("");
+
+  // ==================================================
+  // LOAD SAVED SETTINGS
+  // ==================================================
+
+  useEffect(() => {
+    try {
+      const savedSettings =
+        localStorage.getItem("storeSettings");
+
+      if (!savedSettings) {
+        return;
+      }
+
+      const settings = JSON.parse(savedSettings);
+
+      setStoreName(
+        settings.storeName ||
+          defaultSettings.storeName
+      );
+
+      setStoreEmail(
+        settings.storeEmail ||
+          defaultSettings.storeEmail
+      );
+
+      setCurrency(
+        settings.currency ||
+          defaultSettings.currency
+      );
+
+      setNotifications(
+        settings.notifications ??
+          defaultSettings.notifications
+      );
+
+      setLowStockAlerts(
+        settings.lowStockAlerts ??
+          defaultSettings.lowStockAlerts
+      );
+    } catch (error) {
+      console.error(
+        "Failed to load store settings:",
+        error
+      );
+
+      setError(
+        "Failed to load store settings."
+      );
+    }
+  }, []);
+
+  // ==================================================
   // SAVE SETTINGS
-  // =========================
+  // ==================================================
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    setSaving(true);
-    setSuccess("");
+    try {
+      setSaving(true);
+      setSuccess("");
+      setError("");
 
-    // Save locally for now.
-    // Later this can be connected to
-    // a backend settings API.
+      // ==================================================
+      // PREPARE SETTINGS
+      // ==================================================
 
-    localStorage.setItem(
-      "storeSettings",
-      JSON.stringify({
-        storeName,
-        storeEmail,
-        currency,
+      const settings = {
+        storeName:
+          storeName.trim() ||
+          defaultSettings.storeName,
+
+        storeEmail:
+          storeEmail.trim() ||
+          defaultSettings.storeEmail,
+
+        currency:
+          currency || defaultSettings.currency,
+
         notifications,
-        lowStockAlerts,
-      })
-    );
 
-    setTimeout(() => {
-      setSaving(false);
+        lowStockAlerts,
+      };
+
+      // ==================================================
+      // UPDATE REDUX
+      // ==================================================
+
+      dispatch(setSettings(settings));
+
+      // ==================================================
+      // LOCAL STORAGE
+      // ==================================================
+
+      localStorage.setItem(
+        "storeSettings",
+        JSON.stringify(settings)
+      );
+
+      // ==================================================
+      // BACKWARD COMPATIBILITY EVENT
+      // ==================================================
+
+      window.dispatchEvent(
+        new Event("storeSettingsUpdated")
+      );
+
+      // ==================================================
+      // SUCCESS
+      // ==================================================
+
       setSuccess(
         "Settings saved successfully."
       );
-    }, 500);
+    } catch (error) {
+      console.error(
+        "Failed to save settings:",
+        error
+      );
+
+      setError(
+        "Failed to save settings. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
+
+  // ==================================================
+  // RESET SETTINGS
+  // ==================================================
+
+  const handleReset = () => {
+    try {
+      const settings = {
+        ...defaultSettings,
+      };
+
+      // Update local state
+      setStoreName(
+        defaultSettings.storeName
+      );
+
+      setStoreEmail(
+        defaultSettings.storeEmail
+      );
+
+      setCurrency(
+        defaultSettings.currency
+      );
+
+      setNotifications(
+        defaultSettings.notifications
+      );
+
+      setLowStockAlerts(
+        defaultSettings.lowStockAlerts
+      );
+
+      // Update Redux
+      dispatch(resetSettings());
+
+      // Update localStorage
+      localStorage.setItem(
+        "storeSettings",
+        JSON.stringify(settings)
+      );
+
+      // Notify existing components
+      window.dispatchEvent(
+        new Event("storeSettingsUpdated")
+      );
+
+      setSuccess(
+        "Settings reset successfully."
+      );
+
+      setError("");
+    } catch (error) {
+      console.error(
+        "Failed to reset settings:",
+        error
+      );
+
+      setError(
+        "Failed to reset settings."
+      );
+    }
+  };
+
+  // ==================================================
+  // PAGE
+  // ==================================================
 
   return (
     <section className="p-6 md:p-10">
 
-      {/* =========================
+      {/* ==================================================
           HEADER
-      ========================= */}
+      ================================================== */}
 
       <div className="mb-8">
 
@@ -74,19 +263,18 @@ export default function Settings() {
 
       </div>
 
-
-      {/* =========================
+      {/* ==================================================
           SETTINGS FORM
-      ========================= */}
+      ================================================== */}
 
       <form
         onSubmit={handleSubmit}
         className="max-w-4xl space-y-8"
       >
 
-        {/* =========================
+        {/* ==================================================
             STORE INFORMATION
-        ========================= */}
+        ================================================== */}
 
         <div className="rounded-xl border bg-white p-6 shadow-sm md:p-8">
 
@@ -97,7 +285,6 @@ export default function Settings() {
           <p className="mt-1 text-gray-500">
             Basic information about your store.
           </p>
-
 
           <div className="mt-6 space-y-5">
 
@@ -121,13 +308,13 @@ export default function Settings() {
                     event.target.value
                   )
                 }
-                className="w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500"
+                required
+                className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
 
             </div>
 
-
-            {/* EMAIL */}
+            {/* STORE EMAIL */}
 
             <div>
 
@@ -147,11 +334,11 @@ export default function Settings() {
                     event.target.value
                   )
                 }
-                className="w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500"
+                required
+                className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
 
             </div>
-
 
             {/* CURRENCY */}
 
@@ -172,7 +359,7 @@ export default function Settings() {
                     event.target.value
                   )
                 }
-                className="w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
 
                 <option value="BDT">
@@ -197,16 +384,20 @@ export default function Settings() {
 
               </select>
 
+              <p className="mt-2 text-sm text-gray-500">
+                Product prices will be displayed
+                using this currency.
+              </p>
+
             </div>
 
           </div>
 
         </div>
 
-
-        {/* =========================
+        {/* ==================================================
             NOTIFICATIONS
-        ========================= */}
+        ================================================== */}
 
         <div className="rounded-xl border bg-white p-6 shadow-sm md:p-8">
 
@@ -218,10 +409,9 @@ export default function Settings() {
             Control your store notifications.
           </p>
 
-
           <div className="mt-6 space-y-5">
 
-            {/* GENERAL NOTIFICATIONS */}
+            {/* ORDER NOTIFICATIONS */}
 
             <label className="flex cursor-pointer items-center justify-between gap-5 rounded-lg border p-4">
 
@@ -250,7 +440,6 @@ export default function Settings() {
               />
 
             </label>
-
 
             {/* LOW STOCK */}
 
@@ -286,46 +475,57 @@ export default function Settings() {
 
         </div>
 
-
-        {/* =========================
-            SAVE
-        ========================= */}
+        {/* ==================================================
+            SAVE SECTION
+        ================================================== */}
 
         <div className="rounded-xl border bg-white p-6 shadow-sm">
 
+          {/* SUCCESS */}
+
           {success && (
             <div className="mb-5 rounded-lg border border-green-200 bg-green-50 p-4">
+
               <p className="font-medium text-green-700">
                 {success}
               </p>
+
+            </div>
+          )}
+
+          {/* ERROR */}
+
+          {error && (
+            <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4">
+
+              <p className="font-medium text-red-700">
+                {error}
+              </p>
+
             </div>
           )}
 
           <div className="flex flex-col gap-4 sm:flex-row">
 
+            {/* SAVE */}
+
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              className="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
             >
               {saving
                 ? "Saving..."
                 : "Save Settings"}
             </button>
 
+            {/* RESET */}
+
             <button
               type="button"
-              onClick={() => {
-                setStoreName("My Store");
-                setStoreEmail(
-                  "admin@example.com"
-                );
-                setCurrency("USD");
-                setNotifications(true);
-                setLowStockAlerts(true);
-                setSuccess("");
-              }}
-              className="rounded-lg border px-8 py-3 font-semibold hover:bg-gray-100"
+              onClick={handleReset}
+              disabled={saving}
+              className="rounded-lg border px-8 py-3 font-semibold transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Reset
             </button>
